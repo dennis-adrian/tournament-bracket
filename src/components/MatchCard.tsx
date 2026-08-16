@@ -3,6 +3,7 @@ import type { Match, MatchSlot, Participant } from '../types';
 import { MAX_VOTES_PER_MATCH } from '../types';
 import { getMatchOutcome, leadingParticipant } from '../bracket';
 import { EditableName } from './EditableName';
+import { LightboxImage } from './LightboxImage';
 
 type Props = {
   match: Match;
@@ -39,7 +40,10 @@ function Slot({
   return (
     <div className={classes}>
       {participant?.imageDataUrl ? (
-        <img src={participant.imageDataUrl} alt={participant.name} />
+        <LightboxImage
+          src={participant.imageDataUrl}
+          alt={participant.name}
+        />
       ) : (
         <span className="avatar placeholder" aria-hidden="true">
           {participant ? participant.name.slice(0, 1).toUpperCase() : '?'}
@@ -50,10 +54,10 @@ function Slot({
           variant="slot"
           value={participant.name}
           onChange={onRename}
-          ariaLabel="Edit participant name"
+          ariaLabel="Editar nombre del participante"
         />
       ) : (
-        <span className="slot-name">TBD</span>
+        <span className="slot-name">Pendiente</span>
       )}
       <span className="slot-votes">{votes}</span>
     </div>
@@ -109,10 +113,10 @@ export function MatchCard({
           type="button"
           className="present-btn"
           onClick={onFocus}
-          title="Present matchup (show images full-size for voting)"
-          aria-label="Present matchup"
+          title="Mostrar el enfrentamiento a pantalla completa"
+          aria-label="Presentar enfrentamiento"
         >
-          Present
+          Presentar
         </button>
       )}
       <Slot
@@ -134,7 +138,7 @@ export function MatchCard({
         <div className="match-actions">
           {tiePicking ? (
             <div className="tiebreak">
-              <span className="tiebreak-label">Tie! Pick a winner:</span>
+              <span className="tiebreak-label">¡Empate! Elige un ganador:</span>
               <button
                 type="button"
                 onClick={() => handlePickWinner(match.participantA!)}
@@ -152,7 +156,7 @@ export function MatchCard({
                 className="link"
                 onClick={() => setTiePicking(false)}
               >
-                Cancel
+                Cancelar
               </button>
             </div>
           ) : (
@@ -162,7 +166,7 @@ export function MatchCard({
                   type="button"
                   onClick={() => onVote(match.id, 'A')}
                   disabled={isFull}
-                  title={`Vote for ${a!.name}`}
+                  title={`Votar por ${a!.name}`}
                 >
                   +1 {a!.name}
                 </button>
@@ -170,14 +174,14 @@ export function MatchCard({
                   type="button"
                   onClick={() => onVote(match.id, 'B')}
                   disabled={isFull}
-                  title={`Vote for ${b!.name}`}
+                  title={`Votar por ${b!.name}`}
                 >
                   +1 {b!.name}
                 </button>
               </div>
               <div className="match-meta">
                 <span className="vote-count">
-                  {totalVotes}/{MAX_VOTES_PER_MATCH} votes
+                  {totalVotes}/{MAX_VOTES_PER_MATCH} votos
                 </span>
                 {totalVotes > 0 && (
                   <>
@@ -186,14 +190,14 @@ export function MatchCard({
                       className="link"
                       onClick={() => onResetVotes(match.id)}
                     >
-                      Reset
+                      Reiniciar
                     </button>
                     <button
                       type="button"
                       className="finalize"
                       onClick={handleFinalize}
                     >
-                      {isTied ? 'Finalize (tie)' : 'Finalize'}
+                      {isTied ? 'Finalizar (empate)' : 'Finalizar'}
                     </button>
                   </>
                 )}
@@ -204,7 +208,7 @@ export function MatchCard({
       )}
 
       {!isLocked && !isReady && (
-        <div className="match-waiting">Waiting for previous round…</div>
+        <div className="match-waiting">Esperando la ronda anterior…</div>
       )}
     </div>
   );

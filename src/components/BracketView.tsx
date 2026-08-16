@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { MatchSlot, Participant, Tournament } from '../types';
 import { ROUND_NAMES } from '../types';
 import { matchesByRound } from '../bracket';
 import { exportBracketImage } from '../export';
 import { MatchCard } from './MatchCard';
 import { FocusView } from './FocusView';
+import { LightboxImage } from './LightboxImage';
 
 type Props = {
   tournament: Tournament;
@@ -33,7 +35,7 @@ export function BracketView({
       await exportBracketImage(tournament);
     } catch (err) {
       console.error('Export failed', err);
-      alert('Sorry, the bracket image could not be generated.');
+      alert('No se pudo generar la imagen de la llave.');
     } finally {
       setExporting(false);
     }
@@ -57,28 +59,36 @@ export function BracketView({
   return (
     <div className="bracket-page">
       <header className="bracket-header">
-        <h1>Tournament Bracket</h1>
+        <div>
+          <Link to="/" className="crumb-link">
+            Inicio
+          </Link>
+          <h1>Llave del torneo</h1>
+        </div>
         <div className="bracket-header-actions">
           <button
             type="button"
             onClick={handleExport}
             disabled={exporting}
-            title="Download the bracket as a PNG image"
+            title="Descargar la llave como imagen PNG"
           >
-            {exporting ? 'Exporting…' : 'Export as image'}
+            {exporting ? 'Exportando…' : 'Exportar como imagen'}
           </button>
           <button type="button" className="link danger" onClick={onReset}>
-            Reset tournament
+            Reiniciar torneo
           </button>
         </div>
       </header>
 
       {champion && (
         <div className="champion-banner">
-          <div className="champion-label">Champion</div>
+          <div className="champion-label">Campeón</div>
           <div className="champion-body">
             {champion.imageDataUrl && (
-              <img src={champion.imageDataUrl} alt={champion.name} />
+              <LightboxImage
+                src={champion.imageDataUrl}
+                alt={champion.name}
+              />
             )}
             <div className="champion-name">{champion.name}</div>
           </div>

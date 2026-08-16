@@ -41,7 +41,7 @@ function shuffle<T>(arr: T[]): T[] {
  */
 export function generateBracket(participants: Participant[]): Tournament {
   if (participants.length !== 20) {
-    throw new Error(`Expected 20 participants, got ${participants.length}`);
+    throw new Error(`Se esperaban 20 participantes, hay ${participants.length}`);
   }
 
   const shuffled = shuffle(participants);

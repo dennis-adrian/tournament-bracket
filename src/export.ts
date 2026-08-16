@@ -25,7 +25,7 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('Image load failed'));
+    img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
     img.src = src;
   });
 }
@@ -140,7 +140,7 @@ export async function exportBracketImage(tournament: Tournament): Promise<void> 
   canvas.width = canvasW * dpr;
   canvas.height = canvasH * dpr;
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas 2D context unavailable');
+  if (!ctx) throw new Error('No se pudo crear el lienzo');
   ctx.scale(dpr, dpr);
 
   // Background
@@ -152,7 +152,7 @@ export async function exportBracketImage(tournament: Tournament): Promise<void> 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.font = 'bold 38px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-  ctx.fillText('Tournament Bracket', PAD, 34);
+  ctx.fillText('Llave del torneo', PAD, 34);
 
   ctx.fillStyle = '#6b6375';
   ctx.font = '15px system-ui, sans-serif';
@@ -166,7 +166,7 @@ export async function exportBracketImage(tournament: Tournament): Promise<void> 
       ctx.fillStyle = '#aa3bff';
       ctx.font =
         'bold 13px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-      ctx.fillText('CHAMPION', canvasW - PAD, 34);
+      ctx.fillText('CAMPEÓN', canvasW - PAD, 34);
       ctx.fillStyle = '#08060d';
       ctx.font =
         'bold 30px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
@@ -290,7 +290,7 @@ export async function exportBracketImage(tournament: Tournament): Promise<void> 
     ctx.font = isWinner
       ? 'bold 20px system-ui, -apple-system, Segoe UI, Roboto, sans-serif'
       : '18px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-    const name = participant ? participant.name : 'TBD';
+    const name = participant ? participant.name : 'Pendiente';
     const truncName = truncate(ctx, name, textMaxW);
     const nameY = y + h / 2 - 4;
     ctx.fillText(truncName, textX, nameY);
@@ -310,7 +310,7 @@ export async function exportBracketImage(tournament: Tournament): Promise<void> 
     ctx.fillStyle = '#6b6375';
     ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
     const voteText = participant
-      ? `${votes} vote${votes === 1 ? '' : 's'}`
+      ? `${votes} ${votes === 1 ? 'voto' : 'votos'}`
       : '';
     ctx.fillText(voteText, textX, y + h / 2 + 20);
   };

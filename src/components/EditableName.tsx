@@ -5,6 +5,7 @@ type Props = {
   onChange: (next: string) => void;
   variant: Variant;
   ariaLabel?: string;
+  disabled?: boolean;
 };
 
 /**
@@ -12,14 +13,21 @@ type Props = {
  * focus. Used for participant names in the setup list, match cards, and the
  * present/focus overlay.
  */
-export function EditableName({ value, onChange, variant, ariaLabel }: Props) {
+export function EditableName({
+  value,
+  onChange,
+  variant,
+  ariaLabel,
+  disabled,
+}: Props) {
   return (
     <input
       type="text"
       className={`editable-name editable-name--${variant}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      aria-label={ariaLabel ?? 'Edit name'}
+      disabled={disabled}
+      aria-label={ariaLabel ?? 'Editar nombre'}
     />
   );
 }

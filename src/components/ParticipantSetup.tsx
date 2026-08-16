@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Participant } from '../types';
 import { TARGET_PARTICIPANTS } from '../types';
 import { newId } from '../bracket';
 import { EditableName } from './EditableName';
+import { LightboxImage } from './LightboxImage';
 
 type Props = {
   participants: Participant[];
@@ -31,7 +33,7 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
   const canStart = participants.length === TARGET_PARTICIPANTS;
 
   function nameFromFile(file: File): string {
-    return file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Untitled';
+    return file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Sin título';
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -42,7 +44,7 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
     if (files.length === 1) {
       const file = files[0];
       if (file.size > MAX_IMAGE_BYTES) {
-        setError('Image too large. Please use a file under 2 MB.');
+        setError('La imagen es demasiado grande. Usa un archivo de menos de 2 MB.');
         e.target.value = '';
         return;
       }
@@ -51,7 +53,7 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
         setPendingImage(dataUrl);
         setError(null);
       } catch {
-        setError('Failed to read image.');
+        setError('No se pudo leer la imagen.');
       }
       return;
     }
@@ -59,7 +61,7 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
     // Multiple files → bulk-add one participant per image, naming from filename.
     const remaining = TARGET_PARTICIPANTS - participants.length;
     if (remaining <= 0) {
-      setError('No more slots available.');
+      setError('No quedan cupos disponibles.');
       e.target.value = '';
       return;
     }
@@ -82,19 +84,19 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
       if (skipped > 0) {
         const reasons: string[] = [];
         if (tooLarge.length > 0) {
-          reasons.push(`${tooLarge.length} over 2 MB`);
+          reasons.push(`${tooLarge.length} de más de 2 MB`);
         }
         if (files.length - tooLarge.length > remaining) {
           reasons.push(
-            `${files.length - tooLarge.length - remaining} past the ${TARGET_PARTICIPANTS}-slot limit`,
+            `${files.length - tooLarge.length - remaining} por encima del límite de ${TARGET_PARTICIPANTS}`,
           );
         }
-        setError(`Skipped ${skipped} file(s): ${reasons.join(', ')}.`);
+        setError(`Se omitieron ${skipped} archivo(s): ${reasons.join(', ')}.`);
       } else {
         setError(null);
       }
     } catch {
-      setError('Failed to read one or more images.');
+      setError('No se pudo leer una o más imágenes.');
     }
 
     e.target.value = '';
@@ -132,12 +134,15 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
 
   return (
     <div className="setup">
+      <p className="crumb">
+        <Link to="/">Inicio</Link>
+      </p>
       <header className="setup-header">
-        <h1>Tournament Bracket</h1>
+        <h1>Llave del torneo</h1>
         <p className="subtitle">
-          Add {TARGET_PARTICIPANTS} participants to start the bracket. Type a
-          name with an optional image, or select multiple images at once to
-          bulk-add participants (filenames become names).
+          Añade {TARGET_PARTICIPANTS} participantes para empezar la llave.
+          Escribe un nombre con una imagen opcional, o selecciona varias
+          imágenes a la vez (el nombre del archivo se convierte en el nombre).
         </p>
       </header>
 
@@ -145,14 +150,14 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
         <div className="form-row">
           <input
             type="text"
-            placeholder="Participant name"
+            placeholder="Nombre del participante"
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={participants.length >= TARGET_PARTICIPANTS}
           />
           <label className="file-label">
-            {pendingImage ? 'Change image' : 'Upload image(s)'}
+            {pendingImage ? 'Cambiar imagen' : 'Subir imagen(es)'}
             <input
               ref={fileInputRef}
               type="file"
@@ -162,14 +167,14 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
               disabled={participants.length >= TARGET_PARTICIPANTS}
             />
           </label>
-          <button type="button" onClick={handleAdd} disabled={!canAdd}>
-            Add
+            <button type="button" onClick={handleAdd} disabled={!canAdd}>
+            Añadir
           </button>
         </div>
 
         {pendingImage && (
           <div className="pending-preview">
-            <img src={pendingImage} alt="Preview" />
+            <LightboxImage src={pendingImage} alt="Vista previa" />
             <button
               type="button"
               className="link"
@@ -178,7 +183,7 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
                 if (fileInputRef.current) fileInputRef.current.value = '';
               }}
             >
-              Remove image
+              Quitar imagen
             </button>
           </div>
         )}
@@ -187,7 +192,7 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
       </div>
 
       <div className="setup-progress">
-        <strong>{participants.length}</strong> / {TARGET_PARTICIPANTS} added
+        <strong>{participants.length}</strong> / {TARGET_PARTICIPANTS} añadidos
       </div>
 
       <ul className="participant-list">
@@ -195,7 +200,11 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
           <li key={p.id}>
             <span className="idx">{idx + 1}.</span>
             {p.imageDataUrl ? (
-              <img src={p.imageDataUrl} alt={p.name} className="thumb" />
+              <LightboxImage
+                src={p.imageDataUrl}
+                alt={p.name}
+                className="thumb"
+              />
             ) : (
               <span className="thumb placeholder" aria-hidden="true">
                 {p.name.slice(0, 1).toUpperCase()}
@@ -205,14 +214,14 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
               variant="participant"
               value={p.name}
               onChange={(next) => handleRename(p.id, next)}
-              ariaLabel={`Name for participant ${idx + 1}`}
+              ariaLabel={`Nombre del participante ${idx + 1}`}
             />
             <button
               type="button"
               className="link danger"
               onClick={() => handleRemove(p.id)}
             >
-              Remove
+              Quitar
             </button>
           </li>
         ))}
@@ -226,8 +235,8 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
           disabled={!canStart}
         >
           {canStart
-            ? 'Start tournament'
-            : `Add ${TARGET_PARTICIPANTS - participants.length} more to start`}
+            ? 'Empezar torneo'
+            : `Añade ${TARGET_PARTICIPANTS - participants.length} más para empezar`}
         </button>
       </div>
     </div>

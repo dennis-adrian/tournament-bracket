@@ -22,5 +22,9 @@ export function saveTournament(tournament: Tournament): void {
 }
 
 export function clearTournament(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (err) {
+    console.error('Failed to clear tournament from localStorage', err);
+  }
 }
