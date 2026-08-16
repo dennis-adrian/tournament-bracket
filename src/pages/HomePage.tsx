@@ -9,11 +9,12 @@ export function HomePage() {
 
   return (
     <div className="setup home">
-      <header className="setup-header">
-        <h1>Concursos</h1>
-        <p className="subtitle">
-          Organiza un concurso de dibujos con un enlace público para votar, o
-          una llave en vivo en este dispositivo.
+      <header className="home-hero">
+        <p className="eyebrow">Un premio, muchos dibujos</p>
+        <h1>Voten el dibujo ganador</h1>
+        <p className="lede">
+          Sube las obras, comparte un enlace y deja que todos elijan desde el
+          teléfono antes de que se acabe el tiempo.
         </p>
       </header>
 
@@ -26,21 +27,28 @@ export function HomePage() {
           }}
           aria-disabled={!contestReady}
         >
-          <div className="home-kicker">Ideal para un premio</div>
+          <span className="home-card-mark" aria-hidden="true">
+            ✦
+          </span>
+          <div className="home-kicker">Con enlace público</div>
           <h2>Concurso de dibujos</h2>
           <p>
-            Sube los dibujos, nombra la sesión, elige un sistema de votación y
-            comparte un enlace. La gente entra con su nombre y vota antes de
-            que termine la cuenta atrás.
+            Sube los dibujos, elige cómo se vota y comparte. La gente entra con
+            su nombre y vota antes de la cuenta atrás.
           </p>
+          <span className="home-card-cta">Crear concurso</span>
         </Link>
         <Link to="/bracket" className="home-card">
+          <span className="home-card-mark" aria-hidden="true">
+            ▣
+          </span>
           <div className="home-kicker">En este dispositivo</div>
           <h2>Llave del torneo</h2>
           <p>
-            20 participantes, eliminación directa, votación controlada por
-            quien presenta. Se queda en este navegador.
+            20 participantes, eliminación directa y votación en vivo. Se queda
+            en este navegador.
           </p>
+          <span className="home-card-cta">Abrir llave</span>
         </Link>
       </div>
 

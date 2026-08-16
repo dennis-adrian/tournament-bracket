@@ -60,8 +60,19 @@
   box-sizing: border-box;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
+  overflow-x: clip;
 }
 
 h1,

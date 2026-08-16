@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { closeContest, publicImageUrl, startContest } from '../contest/api';
 import { getHostToken } from '../contest/tokens';
 import { useContest } from '../contest/useContest';
-import { VOTING_SYSTEMS } from '../contest/types';
+import { VOTING_SYSTEMS, activeEntries, contestRound, isRunoffRound } from '../contest/types';
 import { Countdown } from '../components/Countdown';
 import { ContestResults } from '../components/ContestResults';
 import { LightboxImage } from '../components/LightboxImage';
@@ -35,6 +35,9 @@ export function HostPage() {
   }
 
   const voteUrl = `${window.location.origin}/vote/${slug}`;
+  const round = contestRound(data);
+  const runoff = isRunoffRound(data);
+  const inPlay = new Set(activeEntries(data).map((entry) => entry.id));
   const systemLabel =
     VOTING_SYSTEMS.find((item) => item.id === data.voting_system)?.label ??
     data.voting_system;
@@ -57,7 +60,7 @@ export function HostPage() {
   async function handleClose() {
     if (!slug || !hostToken) return;
     const confirmed = window.confirm(
-      '¿Cerrar la votación ahora y bloquear los resultados?',
+      '¿Cerrar esta ronda ahora? Si hay empate, esos dibujos pasarán a otra votación.',
     );
     if (!confirmed) return;
     setBusy(true);
@@ -82,19 +85,37 @@ export function HostPage() {
     }
   }
 
+  async function shareLink() {
+    const contestName = data?.name ?? 'Concurso';
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: contestName,
+          text: `Vota en ${contestName}`,
+          url: voteUrl,
+        });
+        return;
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+      }
+    }
+    await copyLink();
+  }
+
   return (
     <div className="setup host-page">
       <p className="crumb">
         <Link to="/">Inicio</Link>
       </p>
       <header className="setup-header">
-        <h1>{data.name}</h1>
-        <p className="subtitle">
+        <p className="eyebrow">
           {systemLabel} · {data.duration_minutes}{' '}
           {data.duration_minutes === 1 ? 'minuto' : 'minutos'} ·{' '}
           {data.entries.length}{' '}
           {data.entries.length === 1 ? 'dibujo' : 'dibujos'}
+          {runoff ? ` · desempate ronda ${round}` : ''}
         </p>
+        <h1>{data.name}</h1>
       </header>
 
       <section className="share-box">
@@ -104,7 +125,12 @@ export function HostPage() {
         </p>
         <div className="share-row">
           <input type="text" readOnly value={voteUrl} />
-          <button type="button" className="primary" onClick={() => void copyLink()}>
+        </div>
+        <div className="share-actions">
+          <button type="button" className="primary" onClick={() => void shareLink()}>
+            Compartir
+          </button>
+          <button type="button" onClick={() => void copyLink()}>
             {copied ? 'Copiado' : 'Copiar enlace'}
           </button>
         </div>
@@ -112,6 +138,12 @@ export function HostPage() {
           <Link to={`/vote/${slug}`}>Abrir la página de voto</Link>
         </p>
       </section>
+
+      {copied && (
+        <div className="toast" role="status">
+          Enlace copiado
+        </div>
+      )}
 
       {data.status === 'draft' && (
         <section className="host-status">
@@ -134,7 +166,11 @@ export function HostPage() {
 
       {data.status === 'open' && data.closes_at && (
         <section className="host-status">
-          <p>La votación está abierta</p>
+          <p>
+            {runoff
+              ? `Desempate · ronda ${round}`
+              : 'La votación está abierta'}
+          </p>
           <Countdown closesAt={data.closes_at} onExpire={() => void reload()} />
           <button type="button" disabled={busy} onClick={() => void handleClose()}>
             Cerrar ahora
@@ -155,7 +191,7 @@ export function HostPage() {
           <h2>Dibujos</h2>
           <button
             type="button"
-            className="link"
+            className="chip"
             onClick={() => setShowNames((value) => !value)}
           >
             {showNames ? 'Ocultar nombres' : 'Mostrar nombres'}
@@ -163,7 +199,12 @@ export function HostPage() {
         </div>
         <ul className="entry-grid host-grid">
           {data.entries.map((entry) => (
-            <li key={entry.id} className="entry-card static">
+            <li
+              key={entry.id}
+              className={`entry-card static${
+                runoff && !inPlay.has(entry.id) ? ' sidelined' : ''
+              }`}
+            >
               <LightboxImage
                 src={publicImageUrl(entry.image_path)}
                 alt={showNames ? entry.name : 'Dibujo'}

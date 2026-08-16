@@ -1,6 +1,12 @@
 import { publicImageUrl } from '../contest/api';
 import { tallyVotes } from '../contest/tally';
-import { VOTING_SYSTEMS, type ContestView } from '../contest/types';
+import {
+  activeEntries,
+  contestRound,
+  isRunoffRound,
+  VOTING_SYSTEMS,
+  type ContestView,
+} from '../contest/types';
 import { LightboxImage } from './LightboxImage';
 
 type Props = {
@@ -10,15 +16,11 @@ type Props = {
 
 export function ContestResults({ contest, showNames = false }: Props) {
   const votes = contest.votes ?? [];
-  const entryIds = contest.entries.map((entry) => entry.id);
-  const liveRanked = contest.voting_system === 'ranked' && contest.status !== 'closed';
-  const votesForTally = liveRanked
-    ? votes.filter((vote) => vote.rank === 1)
-    : contest.votes;
+  const entries = activeEntries(contest);
   const tally = tallyVotes(
-    liveRanked ? 'plurality' : contest.voting_system,
-    entryIds,
-    votesForTally,
+    contest.voting_system,
+    entries.map((entry) => entry.id),
+    contest.votes,
   );
   const maxVotes = Math.max(1, ...tally.ranking.map((row) => row.voteCount));
   const byId = new Map(contest.entries.map((entry) => [entry.id, entry]));
@@ -29,15 +31,20 @@ export function ContestResults({ contest, showNames = false }: Props) {
     .map((id) => byId.get(id))
     .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   const closed = contest.status === 'closed';
+  const runoff = isRunoffRound(contest);
+  const round = contestRound(contest);
   const ballotCount = new Set(votes.map((vote) => vote.voter_id)).size;
+  const heading = closed
+    ? 'Resultados finales'
+    : runoff
+      ? `Desempate · ronda ${round}`
+      : 'Resultados en vivo';
 
   return (
     <section className="results">
-      {closed && winners.length > 0 && (
+      {closed && winners.length === 1 && (
         <div className="champion-banner">
-          <div className="champion-label">
-            {winners.length > 1 ? 'Empate' : 'Ganador'}
-          </div>
+          <div className="champion-label">Ganador</div>
           <div className="winner-row">
             {winners.map((entry) => (
               <div key={entry.id} className="champion-body">
@@ -53,16 +60,21 @@ export function ContestResults({ contest, showNames = false }: Props) {
       )}
 
       <div className="results-heading">
-        <h2>{closed ? 'Resultados finales' : 'Resultados en vivo'}</h2>
+        <h2>{heading}</h2>
         <p>
           {systemLabel}
+          {runoff ? ` · ronda ${round}` : ''}
           {' \u00b7 '}
           {ballotCount} {ballotCount === 1 ? 'voto' : 'votos'}
-          {contest.voting_system === 'ranked' && !closed
-            ? ' \u00b7 primeras preferencias'
-            : null}
+          {contest.voting_system === 'ranked' ? ' · primeras preferencias' : null}
         </p>
       </div>
+
+      {runoff && !closed && (
+        <p className="field-hint">
+          Estos dibujos empataron. Hay que votar otra vez para elegir un ganador.
+        </p>
+      )}
 
       {ballotCount === 0 ? (
         <p className="muted">Aún no hay votos.</p>
@@ -71,7 +83,8 @@ export function ContestResults({ contest, showNames = false }: Props) {
           {tally.ranking.map((row) => {
             const entry = byId.get(row.entryId);
             if (!entry) return null;
-            const isWinner = closed && tally.winnerIds.includes(entry.id);
+            const isWinner =
+              closed && winners.length === 1 && tally.winnerIds.includes(entry.id);
             return (
               <li key={entry.id} className={isWinner ? 'winner' : undefined}>
                 <span className="results-place">{row.place}</span>

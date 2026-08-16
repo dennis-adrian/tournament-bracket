@@ -24,6 +24,8 @@ export type ContestView = {
   status: ContestStatus;
   starts_at: string | null;
   closes_at: string | null;
+  round: number;
+  active_entry_ids: string[] | null;
   is_host: boolean;
   has_voted: boolean;
   voter_name: string | null;
@@ -33,6 +35,22 @@ export type ContestView = {
   votes: ContestVote[] | null;
 };
 
+export function contestRound(contest: Pick<ContestView, 'round'>): number {
+  return Number.isFinite(contest.round) && contest.round >= 1 ? contest.round : 1;
+}
+
+export function activeEntries(contest: ContestView): ContestEntry[] {
+  const ids = contest.active_entry_ids;
+  if (!ids || ids.length < 2) return contest.entries;
+  const allowed = new Set(ids);
+  const filtered = contest.entries.filter((entry) => allowed.has(entry.id));
+  return filtered.length >= 2 ? filtered : contest.entries;
+}
+
+export function isRunoffRound(contest: ContestView): boolean {
+  return contestRound(contest) > 1;
+}
+
 export const VOTING_SYSTEMS: {
   id: VotingSystem;
   label: string;
@@ -41,17 +59,17 @@ export const VOTING_SYSTEMS: {
   {
     id: 'plurality',
     label: 'Elige uno',
-    summary: 'Cada persona vota por un solo favorito. Gana quien más votos tenga.',
+    summary: 'Cada persona vota por un solo favorito. Gana quien más votos tenga. Si hay empate, esos dibujos pasan a otra ronda.',
   },
   {
     id: 'approval',
     label: 'Aprobación',
-    summary: 'Vota por todos los dibujos que te gusten. Gana quien más aprobaciones tenga.',
+    summary: 'Vota por todos los dibujos que te gusten. Gana quien más aprobaciones tenga. Si hay empate, esos dibujos pasan a otra ronda.',
   },
   {
     id: 'ranked',
     label: 'Ranking',
     summary:
-      'Ordena todos los dibujos de más a menos favorito. El último lugar se elimina hasta que quede un ganador.',
+      'Ordena todos los dibujos de más a menos favorito. Si hay empate, esos dibujos pasan a otra ronda.',
   },
 ];

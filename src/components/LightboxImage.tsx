@@ -72,12 +72,15 @@ export function LightboxImage({ src, alt, className }: Props) {
             >
               ×
             </button>
-            <img
-              src={src}
-              alt={alt}
-              className="lightbox-full"
+            <figure
+              className="lightbox-figure"
               onClick={(event) => event.stopPropagation()}
-            />
+            >
+              <img src={src} alt={alt} className="lightbox-full" />
+              {alt ? (
+                <figcaption className="lightbox-caption">{alt}</figcaption>
+              ) : null}
+            </figure>
           </div>,
           document.body,
         )}

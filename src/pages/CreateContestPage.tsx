@@ -94,15 +94,16 @@ export function CreateContestPage() {
   }
 
   return (
-    <div className="setup">
+    <div className="setup create-page">
       <p className="crumb">
         <Link to="/">Inicio</Link>
       </p>
       <header className="setup-header">
-        <h1>Nuevo concurso de dibujos</h1>
-        <p className="subtitle">
-          Sube los dibujos, elige cómo se vota y define cuánto dura la ronda.
-          Luego tendrás un enlace para compartir.
+        <p className="eyebrow">Nuevo concurso</p>
+        <h1>Sube los dibujos y abre la votación</h1>
+        <p className="lede">
+          Elige cómo se vota y cuánto dura la ronda. Luego tendrás un enlace
+          para compartir.
         </p>
       </header>
 
@@ -218,7 +219,7 @@ export function CreateContestPage() {
 
       {error && <div className="error">{error}</div>}
 
-      <div className="setup-actions">
+      <div className="setup-actions sticky-cta">
         <button
           type="button"
           className="primary"

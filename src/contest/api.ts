@@ -1,5 +1,5 @@
 import { getSupabase, publicImageUrl } from '../lib/supabase';
-import type { ContestView, VotingSystem } from './types';
+import { contestRound, type ContestView, type VotingSystem } from './types';
 
 const RPC_ERRORS_ES: Record<string, string> = {
   'Host token required': 'Se necesita el token del organizador',
@@ -134,7 +134,14 @@ export async function fetchContest(
     p_client_token: clientToken,
   });
   if (error) throw rpcError(error.message);
-  return data as ContestView;
+  const view = data as ContestView;
+  return {
+    ...view,
+    round: contestRound(view),
+    active_entry_ids: Array.isArray(view.active_entry_ids)
+      ? view.active_entry_ids
+      : null,
+  };
 }
 
 export async function uploadEntryImage(

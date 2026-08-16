@@ -1,9 +1,14 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { joinContest, publicImageUrl, submitVotes } from '../contest/api';
 import { getOrCreateClientToken } from '../contest/tokens';
 import { useContest } from '../contest/useContest';
-import { VOTING_SYSTEMS } from '../contest/types';
+import {
+  activeEntries,
+  contestRound,
+  isRunoffRound,
+  VOTING_SYSTEMS,
+} from '../contest/types';
 import { Countdown } from '../components/Countdown';
 import { ContestResults } from '../components/ContestResults';
 import { LightboxImage } from '../components/LightboxImage';
@@ -19,6 +24,12 @@ export function VotePage() {
   const [ranks, setRanks] = useState<string[]>([]);
   const [showNames, setShowNames] = useState(false);
 
+  useEffect(() => {
+    setSelected(null);
+    setApproved([]);
+    setRanks([]);
+  }, [data?.id, data?.round]);
+
   if (!slug) return <Navigate to="/" replace />;
   if (loading && !data) return <p className="setup">Cargando concurso…</p>;
   if (error && !data) {
@@ -31,6 +42,9 @@ export function VotePage() {
   if (!data) return null;
 
   const contestSlug = slug;
+  const ballot = activeEntries(data);
+  const round = contestRound(data);
+  const runoff = isRunoffRound(data);
   const systemLabel =
     VOTING_SYSTEMS.find((item) => item.id === data.voting_system)?.label ??
     data.voting_system;
@@ -98,16 +112,19 @@ export function VotePage() {
     !busy &&
     ((data.voting_system === 'plurality' && selected) ||
       (data.voting_system === 'approval' && approved.length > 0) ||
-      (data.voting_system === 'ranked' && ranks.length === data.entries.length));
+      (data.voting_system === 'ranked' && ranks.length === ballot.length));
 
   return (
     <div className="setup vote-page">
       <header className="setup-header">
+        <p className="eyebrow">
+          {systemLabel}
+          {runoff ? ` · Desempate ronda ${round}` : ''}
+        </p>
         <h1>{data.name}</h1>
-        <p className="subtitle">{systemLabel}</p>
         <button
           type="button"
-          className="link"
+          className="chip"
           onClick={() => setShowNames((value) => !value)}
         >
           {showNames ? 'Ocultar nombres' : 'Mostrar nombres'}
@@ -116,7 +133,7 @@ export function VotePage() {
 
       {data.status === 'open' && data.closes_at && (
         <div className="vote-timer">
-          <span>La votación cierra en</span>
+          <span>{runoff ? 'El desempate cierra en' : 'La votación cierra en'}</span>
           <Countdown closesAt={data.closes_at} onExpire={() => void reload()} />
         </div>
       )}
@@ -126,7 +143,11 @@ export function VotePage() {
       {!joined && data.status !== 'closed' && (
         <form className="setup-form" onSubmit={(event) => void handleJoin(event)}>
           <h2>Entra con tu nombre</h2>
-          <p className="field-hint">Así sabemos quién ya votó.</p>
+          <p className="field-hint">
+            {runoff
+              ? 'Si ya votaste en la ronda anterior, escribe el mismo nombre para votar otra vez.'
+              : 'Así sabemos quién ya votó. Si cierras la página, entra con el mismo nombre.'}
+          </p>
           <div className="form-row">
             <input
               type="text"
@@ -155,8 +176,8 @@ export function VotePage() {
       {joined && data.status === 'open' && data.has_voted && (
         <div className="waiting-card">
           <p>
-            Gracias, <strong>{data.voter_name}</strong>. Tu voto ya está
-            registrado.
+            Gracias, <strong>{data.voter_name}</strong>. Tu voto de esta ronda
+            ya está registrado.
           </p>
         </div>
       )}
@@ -164,6 +185,8 @@ export function VotePage() {
       {joined && data.status === 'open' && !data.has_voted && (
         <>
           <p className="ballot-instructions">
+            {runoff &&
+              'Estos dibujos empataron. Vota otra vez para elegir un ganador. '}
             {data.voting_system === 'plurality' &&
               'Toca un dibujo para verlo en grande y pulsa Elegir.'}
             {data.voting_system === 'approval' &&
@@ -172,7 +195,7 @@ export function VotePage() {
               'Toca un dibujo para verlo y pulsa Elegir en orden, del más al menos favorito.'}
           </p>
           <ul className="entry-grid">
-            {data.entries.map((entry) => {
+            {ballot.map((entry) => {
               const rank = ranks.indexOf(entry.id);
               return (
                 <li key={entry.id}>
@@ -180,6 +203,14 @@ export function VotePage() {
                     className={`entry-card${isSelected(entry.id) ? ' selected' : ''}`}
                   >
                     {rank >= 0 && <span className="rank-badge">{rank + 1}</span>}
+                    {data.voting_system !== 'ranked' && (
+                      <span
+                        className={`select-mark${isSelected(entry.id) ? ' on' : ''}`}
+                        aria-hidden="true"
+                      >
+                        {isSelected(entry.id) ? '✓' : '+'}
+                      </span>
+                    )}
                     <LightboxImage
                       src={publicImageUrl(entry.image_path)}
                       alt={showNames ? entry.name : 'Dibujo'}
@@ -206,7 +237,7 @@ export function VotePage() {
               );
             })}
           </ul>
-          <div className="setup-actions">
+          <div className="setup-actions sticky-cta">
             <button
               type="button"
               className="primary"
