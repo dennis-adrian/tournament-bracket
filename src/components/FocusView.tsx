@@ -54,7 +54,7 @@ function Side({
         variant="focus"
         value={participant.name}
         onChange={onRename}
-        ariaLabel="Edit participant name"
+        ariaLabel="Editar nombre del participante"
       />
       <div className="focus-votes">{votes}</div>
       <button
@@ -63,7 +63,7 @@ function Side({
         onClick={onVote}
         disabled={disabled}
       >
-        Vote
+        Votar
       </button>
     </div>
   );
@@ -139,10 +139,10 @@ export function FocusView({
         <div className="focus-inner" onClick={(e) => e.stopPropagation()}>
           <div className="focus-round">{ROUND_NAMES[match.round]}</div>
           <div className="focus-empty">
-            This match isn't ready yet — waiting on a previous round.
+            Este enfrentamiento aún no está listo: falta la ronda anterior.
           </div>
           <button type="button" className="focus-close" onClick={onClose}>
-            Close
+            Cerrar
           </button>
         </div>
       </div>
@@ -156,7 +156,7 @@ export function FocusView({
           type="button"
           className="focus-close"
           onClick={onClose}
-          aria-label="Close"
+          aria-label="Cerrar"
         >
           ×
         </button>
@@ -188,14 +188,14 @@ export function FocusView({
         <div className="focus-controls">
           {isLocked ? (
             <div className="focus-status">
-              Winner:{' '}
+              Ganador:{' '}
               <strong>
                 {winnerParticipant ? winnerParticipant.name : '—'}
               </strong>
             </div>
           ) : tiePicking ? (
             <div className="focus-tiebreak">
-              <span>Tie! Pick a winner:</span>
+              <span>¡Empate! Elige un ganador:</span>
               <button
                 type="button"
                 onClick={() => handlePickWinner(a.id)}
@@ -213,13 +213,13 @@ export function FocusView({
                 className="link"
                 onClick={() => setTiePicking(false)}
               >
-                Cancel
+                Cancelar
               </button>
             </div>
           ) : (
             <>
               <div className="focus-vote-count">
-                {totalVotes} / {MAX_VOTES_PER_MATCH} votes
+                {totalVotes} / {MAX_VOTES_PER_MATCH} votos
               </div>
               {totalVotes > 0 && (
                 <button
@@ -227,7 +227,7 @@ export function FocusView({
                   className="link"
                   onClick={() => onResetVotes(match.id)}
                 >
-                  Reset votes
+                  Reiniciar votos
                 </button>
               )}
               <button
@@ -236,14 +236,14 @@ export function FocusView({
                 onClick={handleFinalize}
                 disabled={totalVotes === 0}
               >
-                {isTied ? 'Finalize (tie)' : 'Finalize match'}
+                {isTied ? 'Finalizar (empate)' : 'Finalizar enfrentamiento'}
               </button>
             </>
           )}
         </div>
 
         <div className="focus-hint">
-          Press <kbd>A</kbd> / <kbd>B</kbd> to vote · <kbd>Esc</kbd> to close
+          Pulsa <kbd>A</kbd> / <kbd>B</kbd> para votar · <kbd>Esc</kbd> para cerrar
         </div>
       </div>
     </div>

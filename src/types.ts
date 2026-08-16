@@ -27,10 +27,10 @@ export type Tournament = {
 };
 
 export const ROUND_NAMES: Record<number, string> = {
-  0: 'Play-in',
-  1: 'Round of 16',
-  2: 'Quarterfinals',
-  3: 'Semifinals',
+  0: 'Repechaje',
+  1: 'Octavos',
+  2: 'Cuartos',
+  3: 'Semifinales',
   4: 'Final',
 };
 

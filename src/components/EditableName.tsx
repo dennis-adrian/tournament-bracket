@@ -19,7 +19,7 @@ export function EditableName({ value, onChange, variant, ariaLabel }: Props) {
       className={`editable-name editable-name--${variant}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      aria-label={ariaLabel ?? 'Edit name'}
+      aria-label={ariaLabel ?? 'Editar nombre'}
     />
   );
 }

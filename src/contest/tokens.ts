@@ -1,0 +1,43 @@
+const HOST_PREFIX = 'contest-host:';
+const CLIENT_PREFIX = 'contest-client:';
+const HOST_INDEX_KEY = 'contest-host-index';
+
+export type HostIndexItem = {
+  slug: string;
+  name: string;
+  createdAt: string;
+};
+
+export function getHostToken(slug: string): string | null {
+  return localStorage.getItem(HOST_PREFIX + slug);
+}
+
+export function saveHostToken(slug: string, token: string, name: string): void {
+  localStorage.setItem(HOST_PREFIX + slug, token);
+  const index = listHostedContests().filter((item) => item.slug !== slug);
+  index.unshift({ slug, name, createdAt: new Date().toISOString() });
+  localStorage.setItem(HOST_INDEX_KEY, JSON.stringify(index.slice(0, 12)));
+}
+
+export function listHostedContests(): HostIndexItem[] {
+  try {
+    const raw = localStorage.getItem(HOST_INDEX_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as HostIndexItem[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function getOrCreateClientToken(slug: string): string {
+  const existing = localStorage.getItem(CLIENT_PREFIX + slug);
+  if (existing) return existing;
+  const token = crypto.randomUUID();
+  localStorage.setItem(CLIENT_PREFIX + slug, token);
+  return token;
+}
+
+export function peekClientToken(slug: string): string | null {
+  return localStorage.getItem(CLIENT_PREFIX + slug);
+}
