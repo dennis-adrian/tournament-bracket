@@ -141,6 +141,9 @@ export async function fetchContest(
     active_entry_ids: Array.isArray(view.active_entry_ids)
       ? view.active_entry_ids
       : null,
+    rebound_voter_names: Array.isArray(view.rebound_voter_names)
+      ? view.rebound_voter_names
+      : [],
   };
 }
 
@@ -153,7 +156,9 @@ export async function uploadEntryImage(
   const { error } = await getSupabase()
     .storage.from('contest-entries')
     .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
-  if (error) throw rpcError(error.message);
+  if (error) {
+    throw new Error('No se pudo subir la imagen. Inténtalo de nuevo.');
+  }
   return path;
 }
 

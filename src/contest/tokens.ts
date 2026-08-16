@@ -13,10 +13,18 @@ export function getHostToken(slug: string): string | null {
 }
 
 export function saveHostToken(slug: string, token: string, name: string): void {
-  localStorage.setItem(HOST_PREFIX + slug, token);
-  const index = listHostedContests().filter((item) => item.slug !== slug);
-  index.unshift({ slug, name, createdAt: new Date().toISOString() });
-  localStorage.setItem(HOST_INDEX_KEY, JSON.stringify(index.slice(0, 12)));
+  try {
+    localStorage.setItem(HOST_PREFIX + slug, token);
+  } catch {
+    // Quota or private mode: caller still has the token to show as a fallback.
+  }
+  try {
+    const index = listHostedContests().filter((item) => item.slug !== slug);
+    index.unshift({ slug, name, createdAt: new Date().toISOString() });
+    localStorage.setItem(HOST_INDEX_KEY, JSON.stringify(index.slice(0, 12)));
+  } catch {
+    // Same: keep going so the host link and token can still be displayed.
+  }
 }
 
 export function listHostedContests(): HostIndexItem[] {

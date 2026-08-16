@@ -145,8 +145,8 @@ export function VotePage() {
           <h2>Entra con tu nombre</h2>
           <p className="field-hint">
             {runoff
-              ? 'Si ya votaste en la ronda anterior, escribe el mismo nombre para votar otra vez.'
-              : 'Así sabemos quién ya votó. Si cierras la página, entra con el mismo nombre.'}
+              ? 'Si ya votaste, usa el mismo navegador para votar otra vez. Si aún no habías votado, puedes entrar con el mismo nombre.'
+              : 'Así sabemos quién ya votó. Si cierras la página antes de votar, entra con el mismo nombre.'}
           </p>
           <div className="form-row">
             <input
@@ -188,11 +188,11 @@ export function VotePage() {
             {runoff &&
               'Estos dibujos empataron. Vota otra vez para elegir un ganador. '}
             {data.voting_system === 'plurality' &&
-              'Toca un dibujo para verlo en grande y pulsa Elegir.'}
+              'Toca un dibujo para votar. Usa el icono para verlo en grande.'}
             {data.voting_system === 'approval' &&
-              'Toca los dibujos para verlos y pulsa Elegir en todos los que te gusten.'}
+              'Toca todos los dibujos que te gusten. Usa el icono para verlos en grande.'}
             {data.voting_system === 'ranked' &&
-              'Toca un dibujo para verlo y pulsa Elegir en orden, del más al menos favorito.'}
+              'Toca los dibujos en orden, del más al menos favorito. Usa el icono para verlos en grande.'}
           </p>
           <ul className="entry-grid">
             {ballot.map((entry) => {
@@ -200,7 +200,7 @@ export function VotePage() {
               return (
                 <li key={entry.id}>
                   <div
-                    className={`entry-card${isSelected(entry.id) ? ' selected' : ''}`}
+                    className={`entry-card vote-card${isSelected(entry.id) ? ' selected' : ''}`}
                   >
                     {rank >= 0 && <span className="rank-badge">{rank + 1}</span>}
                     {data.voting_system !== 'ranked' && (
@@ -214,6 +214,7 @@ export function VotePage() {
                     <LightboxImage
                       src={publicImageUrl(entry.image_path)}
                       alt={showNames ? entry.name : 'Dibujo'}
+                      expand="icon"
                     />
                     <button
                       type="button"
@@ -223,15 +224,14 @@ export function VotePage() {
                         if (data.voting_system === 'approval') toggleApproval(entry.id);
                         if (data.voting_system === 'ranked') toggleRank(entry.id);
                       }}
-                    >
-                      <span className="entry-caption">
-                        {showNames
-                          ? entry.name
-                          : isSelected(entry.id)
-                            ? 'Elegido'
-                            : 'Elegir'}
-                      </span>
-                    </button>
+                      aria-pressed={isSelected(entry.id)}
+                      aria-label={
+                        showNames ? `Elegir ${entry.name}` : 'Elegir dibujo'
+                      }
+                    />
+                    {showNames && (
+                      <span className="entry-caption">{entry.name}</span>
+                    )}
                   </div>
                 </li>
               );

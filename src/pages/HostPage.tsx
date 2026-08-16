@@ -60,7 +60,7 @@ export function HostPage() {
   async function handleClose() {
     if (!slug || !hostToken) return;
     const confirmed = window.confirm(
-      '¿Cerrar esta ronda ahora? Si hay empate, esos dibujos pasarán a otra votación.',
+      '¿Cerrar el concurso ahora? Si hay empate, esos dibujos quedarán como ganadores.',
     );
     if (!confirmed) return;
     setBusy(true);
@@ -221,9 +221,22 @@ export function HostPage() {
           <p className="muted">Esperando a que se unan…</p>
         ) : (
           <ul className="voter-chips">
-            {data.voter_names.map((voterName) => (
-              <li key={voterName}>{voterName}</li>
-            ))}
+            {data.voter_names.map((voterName) => {
+              const rebound = (data.rebound_voter_names ?? []).includes(voterName);
+              return (
+                <li
+                  key={voterName}
+                  title={
+                    rebound
+                      ? 'Volvió a entrar desde otro dispositivo antes de votar'
+                      : undefined
+                  }
+                >
+                  {voterName}
+                  {rebound ? ' · otro dispositivo' : ''}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

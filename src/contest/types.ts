@@ -32,6 +32,7 @@ export type ContestView = {
   entries: ContestEntry[];
   voter_count: number;
   voter_names: string[];
+  rebound_voter_names: string[];
   votes: ContestVote[] | null;
 };
 

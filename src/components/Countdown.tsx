@@ -29,7 +29,10 @@ export function Countdown({ closesAt, onExpire }: Props) {
     return () => window.clearInterval(id);
   }, []);
 
-  const remaining = Math.max(0, Date.parse(closesAt) - now);
+  const closesAtMs = Date.parse(closesAt);
+  const remaining = Number.isFinite(closesAtMs)
+    ? Math.max(0, closesAtMs - now)
+    : 0;
 
   useEffect(() => {
     if (remaining === 0 && !expiredRef.current) {

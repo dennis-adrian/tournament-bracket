@@ -19,11 +19,59 @@ type DraftEntry = {
 };
 
 const DURATION_PRESETS = [5, 10, 15, 30];
+const DURATION_MIN = 1;
+const DURATION_MAX = 180;
 const MAX_ENTRIES = 20;
+const UPLOAD_CONCURRENCY = 4;
+
+type CreatedContest = {
+  id: string;
+  slug: string;
+  host_token: string;
+};
+
+type PendingCreate = {
+  contest: CreatedContest;
+  uploaded: Map<string, string>;
+  entriesAdded: boolean;
+};
+
+function clampDuration(value: number): number {
+  if (!Number.isFinite(value)) return DURATION_MIN;
+  return Math.min(DURATION_MAX, Math.max(DURATION_MIN, Math.trunc(value)));
+}
+
+async function runWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
+  if (items.length === 0) return;
+  let nextIndex = 0;
+  let firstError: unknown;
+  async function run() {
+    while (nextIndex < items.length) {
+      if (firstError) return;
+      const index = nextIndex;
+      nextIndex += 1;
+      try {
+        await worker(items[index]);
+      } catch (err) {
+        firstError = err;
+        return;
+      }
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => run()),
+  );
+  if (firstError) throw firstError;
+}
 
 export function CreateContestPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingCreateRef = useRef<PendingCreate | null>(null);
   const [name, setName] = useState('Concurso de dibujos');
   const [system, setSystem] = useState<VotingSystem>('plurality');
   const [duration, setDuration] = useState(10);
@@ -67,26 +115,50 @@ export function CreateContestPage() {
     setBusy(true);
     setError(null);
     try {
-      const created = await createContest({
-        name: name.trim(),
-        votingSystem: system,
-        durationMinutes: duration,
-      });
-      saveHostToken(created.slug, created.host_token, name.trim());
+      let pending = pendingCreateRef.current;
+      if (!pending) {
+        const created = await createContest({
+          name: name.trim(),
+          votingSystem: system,
+          durationMinutes: duration,
+        });
+        saveHostToken(created.slug, created.host_token, name.trim());
+        pending = {
+          contest: created,
+          uploaded: new Map(),
+          entriesAdded: false,
+        };
+        pendingCreateRef.current = pending;
+      }
 
-      const uploaded = [];
-      for (const [index, entry] of entries.entries()) {
+      if (pending.entriesAdded) {
+        navigate(`/contest/${pending.contest.slug}`);
+        return;
+      }
+
+      const contest = pending.contest;
+      const pendingUploads = entries.filter((entry) => !pending.uploaded.has(entry.id));
+      await runWithConcurrency(pendingUploads, UPLOAD_CONCURRENCY, async (entry) => {
         const blob = await fileToJpegBlob(entry.file);
-        const imagePath = await uploadEntryImage(created.id, entry.id, blob);
-        uploaded.push({
+        const imagePath = await uploadEntryImage(contest.id, entry.id, blob);
+        pending.uploaded.set(entry.id, imagePath);
+      });
+
+      const uploaded = entries.map((entry, index) => {
+        const imagePath = pending.uploaded.get(entry.id);
+        if (!imagePath) {
+          throw new Error('No se pudo subir este dibujo.');
+        }
+        return {
           id: entry.id,
           name: entry.name.trim() || `Dibujo ${index + 1}`,
           image_path: imagePath,
           sort_order: index,
-        });
-      }
-      await addContestEntries(created.slug, created.host_token, uploaded);
-      navigate(`/contest/${created.slug}`);
+        };
+      });
+      await addContestEntries(contest.slug, contest.host_token, uploaded);
+      pending.entriesAdded = true;
+      navigate(`/contest/${contest.slug}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear el concurso.');
       setBusy(false);
@@ -157,10 +229,10 @@ export function CreateContestPage() {
         <label className="duration-custom">
           <input
             type="number"
-            min={1}
-            max={180}
+            min={DURATION_MIN}
+            max={DURATION_MAX}
             value={duration}
-            onChange={(e) => setDuration(Number(e.target.value) || 1)}
+            onChange={(e) => setDuration(clampDuration(Number(e.target.value)))}
           />
           minutos
         </label>

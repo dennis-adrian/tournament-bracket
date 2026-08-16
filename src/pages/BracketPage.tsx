@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MatchSlot, Participant, Tournament } from '../types';
 import {
   castVote,
@@ -17,6 +17,21 @@ type AppState = {
 
 const emptyState: AppState = { participants: [], tournament: null };
 
+function persistBracketState(state: AppState) {
+  if (state.tournament) {
+    saveTournament(state.tournament);
+  } else if (state.participants.length > 0) {
+    saveTournament({
+      participants: state.participants,
+      matches: [],
+      started: false,
+      champion: null,
+    });
+  } else {
+    clearTournament();
+  }
+}
+
 export function BracketPage() {
   const [state, setState] = useState<AppState>(() => {
     const saved = loadTournament();
@@ -27,23 +42,24 @@ export function BracketPage() {
     return { participants: saved.participants, tournament: null };
   });
 
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (state.tournament) {
-        saveTournament(state.tournament);
-      } else if (state.participants.length > 0) {
-        saveTournament({
-          participants: state.participants,
-          matches: [],
-          started: false,
-          champion: null,
-        });
-      } else {
-        clearTournament();
-      }
-    }, 250);
+    const timer = setTimeout(() => persistBracketState(state), 250);
     return () => clearTimeout(timer);
   }, [state]);
+
+  useEffect(() => {
+    function flush() {
+      persistBracketState(stateRef.current);
+    }
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, []);
 
   function handleParticipantsChange(next: Participant[]) {
     setState((s) => ({ ...s, participants: next }));

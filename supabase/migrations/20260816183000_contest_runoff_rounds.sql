@@ -39,7 +39,12 @@ begin
 end;
 $$;
 
-create or replace function private.resolve_open_contest(p_id uuid)
+drop function if exists private.resolve_open_contest(uuid);
+
+create or replace function private.resolve_open_contest(
+  p_id uuid,
+  p_force boolean default false
+)
 returns public.contests
 language plpgsql
 set search_path = public
@@ -49,10 +54,14 @@ declare
   v_active uuid[];
   v_tied uuid[];
   v_max integer;
+  v_max_rounds constant integer := 5;
 begin
-  select * into strict c from public.contests where id = p_id;
+  select * into strict c from public.contests where id = p_id for update;
 
-  if c.status <> 'open' or c.closes_at is null or c.closes_at > now() then
+  if c.status <> 'open' then
+    return c;
+  end if;
+  if not p_force and (c.closes_at is null or c.closes_at > now()) then
     return c;
   end if;
 
@@ -95,6 +104,17 @@ begin
   if coalesce(array_length(v_tied, 1), 0) <= 1 then
     update public.contests
     set status = 'closed'
+    where id = c.id
+    returning * into c;
+    return c;
+  end if;
+
+  -- Host force-close and the round cap both end a tie as co-winners.
+  if p_force or c.round >= v_max_rounds then
+    update public.contests
+    set
+      status = 'closed',
+      active_entry_ids = v_tied
     where id = c.id
     returning * into c;
     return c;
@@ -197,7 +217,7 @@ begin
     where id = c.id;
   end if;
 
-  c := private.resolve_open_contest(c.id);
+  c := private.resolve_open_contest(c.id, true);
 
   return jsonb_build_object(
     'status', c.status,

@@ -59,6 +59,24 @@ export function ContestResults({ contest, showNames = false }: Props) {
         </div>
       )}
 
+      {closed && winners.length > 1 && (
+        <div className="champion-banner">
+          <div className="champion-label">Empate</div>
+          <p className="field-hint">El resultado es un empate.</p>
+          <div className="winner-row">
+            {winners.map((entry) => (
+              <div key={entry.id} className="champion-body">
+                <LightboxImage
+                  src={publicImageUrl(entry.image_path)}
+                  alt={showNames ? entry.name : 'Dibujo empatado'}
+                />
+                {showNames && <div className="champion-name">{entry.name}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="results-heading">
         <h2>{heading}</h2>
         <p>
