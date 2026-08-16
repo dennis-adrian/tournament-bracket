@@ -6,6 +6,7 @@ import { matchesByRound } from '../bracket';
 import { exportBracketImage } from '../export';
 import { MatchCard } from './MatchCard';
 import { FocusView } from './FocusView';
+import { LightboxImage } from './LightboxImage';
 
 type Props = {
   tournament: Tournament;
@@ -84,7 +85,10 @@ export function BracketView({
           <div className="champion-label">Campeón</div>
           <div className="champion-body">
             {champion.imageDataUrl && (
-              <img src={champion.imageDataUrl} alt={champion.name} />
+              <LightboxImage
+                src={champion.imageDataUrl}
+                alt={champion.name}
+              />
             )}
             <div className="champion-name">{champion.name}</div>
           </div>

@@ -6,6 +6,7 @@ import { useContest } from '../contest/useContest';
 import { VOTING_SYSTEMS } from '../contest/types';
 import { Countdown } from '../components/Countdown';
 import { ContestResults } from '../components/ContestResults';
+import { LightboxImage } from '../components/LightboxImage';
 
 export function VotePage() {
   const { slug } = useParams();
@@ -163,33 +164,44 @@ export function VotePage() {
       {joined && data.status === 'open' && !data.has_voted && (
         <>
           <p className="ballot-instructions">
-            {data.voting_system === 'plurality' && 'Toca un dibujo y envía tu voto.'}
+            {data.voting_system === 'plurality' &&
+              'Toca un dibujo para verlo en grande y pulsa Elegir.'}
             {data.voting_system === 'approval' &&
-              'Toca todos los dibujos que te gusten y envía tu voto.'}
+              'Toca los dibujos para verlos y pulsa Elegir en todos los que te gusten.'}
             {data.voting_system === 'ranked' &&
-              'Toca los dibujos en orden, del más al menos favorito.'}
+              'Toca un dibujo para verlo y pulsa Elegir en orden, del más al menos favorito.'}
           </p>
           <ul className="entry-grid">
             {data.entries.map((entry) => {
               const rank = ranks.indexOf(entry.id);
               return (
                 <li key={entry.id}>
-                  <button
-                    type="button"
+                  <div
                     className={`entry-card${isSelected(entry.id) ? ' selected' : ''}`}
-                    onClick={() => {
-                      if (data.voting_system === 'plurality') setSelected(entry.id);
-                      if (data.voting_system === 'approval') toggleApproval(entry.id);
-                      if (data.voting_system === 'ranked') toggleRank(entry.id);
-                    }}
                   >
                     {rank >= 0 && <span className="rank-badge">{rank + 1}</span>}
-                    <img
+                    <LightboxImage
                       src={publicImageUrl(entry.image_path)}
                       alt={showNames ? entry.name : 'Dibujo'}
                     />
-                    {showNames && <div className="entry-caption">{entry.name}</div>}
-                  </button>
+                    <button
+                      type="button"
+                      className="entry-select"
+                      onClick={() => {
+                        if (data.voting_system === 'plurality') setSelected(entry.id);
+                        if (data.voting_system === 'approval') toggleApproval(entry.id);
+                        if (data.voting_system === 'ranked') toggleRank(entry.id);
+                      }}
+                    >
+                      <span className="entry-caption">
+                        {showNames
+                          ? entry.name
+                          : isSelected(entry.id)
+                            ? 'Elegido'
+                            : 'Elegir'}
+                      </span>
+                    </button>
+                  </div>
                 </li>
               );
             })}

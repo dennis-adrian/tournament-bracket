@@ -3,6 +3,7 @@ import type { Match, MatchSlot, Participant } from '../types';
 import { MAX_VOTES_PER_MATCH, ROUND_NAMES } from '../types';
 import { getMatchOutcome, leadingParticipant } from '../bracket';
 import { EditableName } from './EditableName';
+import { LightboxImage } from './LightboxImage';
 
 type Props = {
   match: Match;
@@ -43,7 +44,10 @@ function Side({
     <div className={classes}>
       <div className="focus-image">
         {participant.imageDataUrl ? (
-          <img src={participant.imageDataUrl} alt={participant.name} />
+          <LightboxImage
+            src={participant.imageDataUrl}
+            alt={participant.name}
+          />
         ) : (
           <div className="focus-placeholder">
             {participant.name.slice(0, 1).toUpperCase()}

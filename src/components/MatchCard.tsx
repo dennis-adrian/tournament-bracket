@@ -3,6 +3,7 @@ import type { Match, MatchSlot, Participant } from '../types';
 import { MAX_VOTES_PER_MATCH } from '../types';
 import { getMatchOutcome, leadingParticipant } from '../bracket';
 import { EditableName } from './EditableName';
+import { LightboxImage } from './LightboxImage';
 
 type Props = {
   match: Match;
@@ -39,7 +40,10 @@ function Slot({
   return (
     <div className={classes}>
       {participant?.imageDataUrl ? (
-        <img src={participant.imageDataUrl} alt={participant.name} />
+        <LightboxImage
+          src={participant.imageDataUrl}
+          alt={participant.name}
+        />
       ) : (
         <span className="avatar placeholder" aria-hidden="true">
           {participant ? participant.name.slice(0, 1).toUpperCase() : '?'}

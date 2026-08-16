@@ -9,6 +9,7 @@ import { fileToJpegBlob, nameFromFile } from '../contest/images';
 import { saveHostToken } from '../contest/tokens';
 import { VOTING_SYSTEMS, type VotingSystem } from '../contest/types';
 import { EditableName } from '../components/EditableName';
+import { LightboxImage } from '../components/LightboxImage';
 
 type DraftEntry = {
   id: string;
@@ -187,7 +188,11 @@ export function CreateContestPage() {
         {entries.map((entry, idx) => (
           <li key={entry.id}>
             <span className="idx">{idx + 1}.</span>
-            <img src={entry.previewUrl} alt="" className="thumb" />
+            <LightboxImage
+              src={entry.previewUrl}
+              alt={entry.name || 'Vista previa'}
+              className="thumb"
+            />
             <EditableName
               variant="participant"
               value={entry.name}

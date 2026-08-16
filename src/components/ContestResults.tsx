@@ -1,6 +1,7 @@
 import { publicImageUrl } from '../contest/api';
 import { tallyVotes } from '../contest/tally';
 import { VOTING_SYSTEMS, type ContestView } from '../contest/types';
+import { LightboxImage } from './LightboxImage';
 
 type Props = {
   contest: ContestView;
@@ -40,7 +41,7 @@ export function ContestResults({ contest, showNames = false }: Props) {
           <div className="winner-row">
             {winners.map((entry) => (
               <div key={entry.id} className="champion-body">
-                <img
+                <LightboxImage
                   src={publicImageUrl(entry.image_path)}
                   alt={showNames ? entry.name : 'Dibujo ganador'}
                 />
@@ -74,7 +75,7 @@ export function ContestResults({ contest, showNames = false }: Props) {
             return (
               <li key={entry.id} className={isWinner ? 'winner' : undefined}>
                 <span className="results-place">{row.place}</span>
-                <img
+                <LightboxImage
                   src={publicImageUrl(entry.image_path)}
                   alt={showNames ? entry.name : `Dibujo ${row.place}`}
                 />

@@ -6,6 +6,7 @@ import { useContest } from '../contest/useContest';
 import { VOTING_SYSTEMS } from '../contest/types';
 import { Countdown } from '../components/Countdown';
 import { ContestResults } from '../components/ContestResults';
+import { LightboxImage } from '../components/LightboxImage';
 
 export function HostPage() {
   const { slug } = useParams();
@@ -163,7 +164,7 @@ export function HostPage() {
         <ul className="entry-grid host-grid">
           {data.entries.map((entry) => (
             <li key={entry.id} className="entry-card static">
-              <img
+              <LightboxImage
                 src={publicImageUrl(entry.image_path)}
                 alt={showNames ? entry.name : 'Dibujo'}
               />

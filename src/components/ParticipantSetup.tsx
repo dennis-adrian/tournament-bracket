@@ -4,6 +4,7 @@ import type { Participant } from '../types';
 import { TARGET_PARTICIPANTS } from '../types';
 import { newId } from '../bracket';
 import { EditableName } from './EditableName';
+import { LightboxImage } from './LightboxImage';
 
 type Props = {
   participants: Participant[];
@@ -173,7 +174,7 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
 
         {pendingImage && (
           <div className="pending-preview">
-            <img src={pendingImage} alt="Vista previa" />
+            <LightboxImage src={pendingImage} alt="Vista previa" />
             <button
               type="button"
               className="link"
@@ -199,7 +200,11 @@ export function ParticipantSetup({ participants, onChange, onStart }: Props) {
           <li key={p.id}>
             <span className="idx">{idx + 1}.</span>
             {p.imageDataUrl ? (
-              <img src={p.imageDataUrl} alt={p.name} className="thumb" />
+              <LightboxImage
+                src={p.imageDataUrl}
+                alt={p.name}
+                className="thumb"
+              />
             ) : (
               <span className="thumb placeholder" aria-hidden="true">
                 {p.name.slice(0, 1).toUpperCase()}
