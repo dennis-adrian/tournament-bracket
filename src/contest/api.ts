@@ -30,6 +30,10 @@ const RPC_ERRORS_ES: Record<string, string> = {
   'Name must be between 1 and 40 characters':
     'El nombre debe tener entre 1 y 40 caracteres',
   'That name is already taken': 'Ese nombre ya está en uso',
+  'Ask the host to let you rejoin with that name':
+    'Ese nombre ya está en uso. Pídele al organizador que te deje volver a entrar con él.',
+  'That person has not joined yet': 'Esa persona aún no se ha unido',
+  'That person already voted': 'Esa persona ya votó',
   'Voting is not open': 'La votación no está abierta',
   'Votes must be an array': 'Los votos deben enviarse como una lista',
   'Join with your name before voting': 'Entra con tu nombre antes de votar',
@@ -91,6 +95,19 @@ export async function grantEntryUploads(
     p_slug: slug,
     p_host_token: hostToken,
     p_entry_ids: entryIds,
+  });
+  if (error) throw rpcError(error.message);
+}
+
+export async function grantVoterReclaim(
+  slug: string,
+  hostToken: string,
+  voterName: string,
+): Promise<void> {
+  const { error } = await getSupabase().rpc('grant_voter_reclaim', {
+    p_slug: slug,
+    p_host_token: hostToken,
+    p_voter_name: voterName,
   });
   if (error) throw rpcError(error.message);
 }
@@ -161,6 +178,20 @@ export async function fetchContest(
   };
 }
 
+function isExistingObjectError(error: {
+  status?: number;
+  statusCode?: string;
+  message?: string;
+}): boolean {
+  if (error.status === 409 || error.statusCode === '409') return true;
+  const text = `${error.statusCode ?? ''} ${error.message ?? ''}`.toLowerCase();
+  return (
+    text.includes('duplicate') ||
+    text.includes('already exists') ||
+    text.includes('resourcealreadyexists')
+  );
+}
+
 export async function uploadEntryImage(
   contestId: string,
   entryId: string,
@@ -170,7 +201,7 @@ export async function uploadEntryImage(
   const { error } = await getSupabase()
     .storage.from('contest-entries')
     .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
-  if (error) {
+  if (error && !isExistingObjectError(error)) {
     throw new Error('No se pudo subir la imagen. Inténtalo de nuevo.');
   }
   return path;

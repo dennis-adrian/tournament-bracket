@@ -39,7 +39,7 @@ begin
   end if;
 
   v_count := coalesce(array_length(p_entry_ids, 1), 0);
-  if v_count < 1 or v_count > 20 then
+  if v_count < 2 or v_count > 20 then
     raise exception 'Add between 2 and 20 drawings';
   end if;
 

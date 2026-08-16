@@ -56,6 +56,18 @@ declare
   v_max integer;
   v_max_rounds constant integer := 5;
 begin
+  select * into strict c from public.contests where id = p_id;
+
+  if c.status <> 'open' then
+    return c;
+  end if;
+  if not p_force and (c.closes_at is null or c.closes_at > now()) then
+    return c;
+  end if;
+
+  -- Only the sessions that can actually change the contest take the row lock,
+  -- so ordinary reads stay concurrent. Re-check under the lock: another
+  -- session may have resolved the contest while we waited for it.
   select * into strict c from public.contests where id = p_id for update;
 
   if c.status <> 'open' then

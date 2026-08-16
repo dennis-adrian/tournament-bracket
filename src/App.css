@@ -902,11 +902,24 @@ input[type='number']:focus {
   margin: 0 0 28px;
 }
 .voter-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 12px;
   border-radius: 999px;
   background: var(--accent-bg);
   color: var(--text-h);
   font-size: 14px;
+}
+.voter-reclaim {
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-h);
+  font-size: 12px;
+  font-weight: 600;
 }
 .entry-grid {
   list-style: none;

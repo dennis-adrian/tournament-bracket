@@ -252,7 +252,11 @@ export function CreateContestPage() {
             max={DURATION_MAX}
             value={duration}
             disabled={settingsDisabled}
-            onChange={(e) => setDuration(clampDuration(Number(e.target.value)))}
+            onChange={(e) => {
+              const next = Number(e.target.value);
+              if (e.target.value === '' || !Number.isFinite(next)) return;
+              setDuration(clampDuration(next));
+            }}
           />
           minutos
         </label>

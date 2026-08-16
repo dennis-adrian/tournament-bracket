@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { closeContest, publicImageUrl, startContest } from '../contest/api';
+import {
+  closeContest,
+  grantVoterReclaim,
+  publicImageUrl,
+  startContest,
+} from '../contest/api';
 import { getHostToken } from '../contest/tokens';
 import { useContest } from '../contest/useContest';
 import { VOTING_SYSTEMS, activeEntries, contestRound, isRunoffRound } from '../contest/types';
@@ -15,6 +20,7 @@ export function HostPage() {
   const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showNames, setShowNames] = useState(false);
+  const [reclaimed, setReclaimed] = useState<string | null>(null);
 
   if (!slug) return <Navigate to="/" replace />;
   if (loading && !data) return <p className="setup">Cargando concurso…</p>;
@@ -70,6 +76,28 @@ export function HostPage() {
       await reload();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'No se pudo cerrar la votación.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleReclaim(voterName: string) {
+    if (!slug || !hostToken) return;
+    const confirmed = window.confirm(
+      `¿Dejar que ${voterName} vuelva a entrar desde otro dispositivo? ` +
+        'Tiene 10 minutos para escribir ese nombre.',
+    );
+    if (!confirmed) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      await grantVoterReclaim(slug, hostToken, voterName);
+      setReclaimed(voterName);
+      window.setTimeout(() => setReclaimed(null), 4000);
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'No se pudo autorizar el reingreso.',
+      );
     } finally {
       setBusy(false);
     }
@@ -142,6 +170,12 @@ export function HostPage() {
       {copied && (
         <div className="toast" role="status">
           Enlace copiado
+        </div>
+      )}
+
+      {reclaimed && (
+        <div className="toast" role="status">
+          {reclaimed} puede volver a entrar durante 10 minutos
         </div>
       )}
 
@@ -220,24 +254,41 @@ export function HostPage() {
         {data.voter_names.length === 0 ? (
           <p className="muted">Esperando a que se unan…</p>
         ) : (
-          <ul className="voter-chips">
-            {data.voter_names.map((voterName) => {
-              const rebound = (data.rebound_voter_names ?? []).includes(voterName);
-              return (
-                <li
-                  key={voterName}
-                  title={
-                    rebound
-                      ? 'Volvió a entrar desde otro dispositivo antes de votar'
-                      : undefined
-                  }
-                >
-                  {voterName}
-                  {rebound ? ' · otro dispositivo' : ''}
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <p className="field-hint">
+              Si alguien perdió su teléfono o cerró la página, autoriza su
+              reingreso: solo así puede volver a entrar con el mismo nombre.
+            </p>
+            <ul className="voter-chips">
+              {data.voter_names.map((voterName) => {
+                const rebound = (data.rebound_voter_names ?? []).includes(voterName);
+                return (
+                  <li
+                    key={voterName}
+                    title={
+                      rebound
+                        ? 'Volvió a entrar desde otro dispositivo antes de votar'
+                        : undefined
+                    }
+                  >
+                    {voterName}
+                    {rebound ? ' · otro dispositivo' : ''}
+                    {data.status !== 'closed' && (
+                      <button
+                        type="button"
+                        className="voter-reclaim"
+                        disabled={busy}
+                        title={`Dejar que ${voterName} entre desde otro dispositivo`}
+                        onClick={() => void handleReclaim(voterName)}
+                      >
+                        Dejar reingresar
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         )}
       </section>
 

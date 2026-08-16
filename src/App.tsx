@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { HomePage } from './pages/HomePage';
 import { BracketPage } from './pages/BracketPage';
@@ -17,6 +17,7 @@ export default function App() {
         <Route path="/vote/:slug" element={<VotePage />} />
       </Route>
       <Route path="/bracket" element={<BracketPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

@@ -3,6 +3,10 @@
 -- enabled with no policies, so the Data API cannot read or write rows.
 
 create schema if not exists private;
+create schema if not exists extensions;
+
+-- digest() and gen_random_bytes() below come from pgcrypto.
+create extension if not exists pgcrypto with schema extensions;
 
 create or replace function private.hash_token(p_token text)
 returns bytea

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { joinContest, publicImageUrl, submitVotes } from '../contest/api';
 import { getOrCreateClientToken } from '../contest/tokens';
@@ -8,6 +8,7 @@ import {
   contestRound,
   isRunoffRound,
   VOTING_SYSTEMS,
+  type ContestView,
 } from '../contest/types';
 import { Countdown } from '../components/Countdown';
 import { ContestResults } from '../components/ContestResults';
@@ -19,16 +20,7 @@ export function VotePage() {
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [approved, setApproved] = useState<string[]>([]);
-  const [ranks, setRanks] = useState<string[]>([]);
   const [showNames, setShowNames] = useState(false);
-
-  useEffect(() => {
-    setSelected(null);
-    setApproved([]);
-    setRanks([]);
-  }, [data?.id, data?.round]);
 
   if (!slug) return <Navigate to="/" replace />;
   if (loading && !data) return <p className="setup">Cargando concurso…</p>;
@@ -42,7 +34,6 @@ export function VotePage() {
   if (!data) return null;
 
   const contestSlug = slug;
-  const ballot = activeEntries(data);
   const round = contestRound(data);
   const runoff = isRunoffRound(data);
   const systemLabel =
@@ -65,54 +56,6 @@ export function VotePage() {
       setBusy(false);
     }
   }
-
-  function toggleApproval(id: string) {
-    setApproved((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-    );
-  }
-
-  function toggleRank(id: string) {
-    setRanks((current) => {
-      const existing = current.indexOf(id);
-      if (existing >= 0) return current.slice(0, existing);
-      return [...current, id];
-    });
-  }
-
-  function isSelected(id: string): boolean {
-    if (!data) return false;
-    if (data.voting_system === 'plurality') return selected === id;
-    if (data.voting_system === 'approval') return approved.includes(id);
-    return ranks.includes(id);
-  }
-
-  async function handleSubmit() {
-    if (!data) return;
-    setBusy(true);
-    setFormError(null);
-    try {
-      const token = getOrCreateClientToken(contestSlug);
-      const votes =
-        data.voting_system === 'plurality' && selected
-          ? [{ entry_id: selected, rank: 1 }]
-          : data.voting_system === 'approval'
-            ? approved.map((id) => ({ entry_id: id, rank: 1 }))
-            : ranks.map((id, index) => ({ entry_id: id, rank: index + 1 }));
-      await submitVotes(contestSlug, token, votes);
-      await reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'No se pudo enviar tu voto.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const canSubmit =
-    !busy &&
-    ((data.voting_system === 'plurality' && selected) ||
-      (data.voting_system === 'approval' && approved.length > 0) ||
-      (data.voting_system === 'ranked' && ranks.length === ballot.length));
 
   return (
     <div className="setup vote-page">
@@ -145,8 +88,8 @@ export function VotePage() {
           <h2>Entra con tu nombre</h2>
           <p className="field-hint">
             {runoff
-              ? 'Si ya votaste, usa el mismo navegador para votar otra vez. Si aún no habías votado, puedes entrar con el mismo nombre.'
-              : 'Así sabemos quién ya votó. Si cierras la página antes de votar, entra con el mismo nombre.'}
+              ? 'Si ya votaste, usa el mismo navegador para votar otra vez. Si cambiaste de dispositivo, pídele al organizador que autorice tu reingreso.'
+              : 'Así sabemos quién ya votó. Si vuelves desde otro dispositivo, pídele al organizador que autorice tu reingreso con ese nombre.'}
           </p>
           <div className="form-row">
             <input
@@ -183,71 +126,16 @@ export function VotePage() {
       )}
 
       {joined && data.status === 'open' && !data.has_voted && (
-        <>
-          <p className="ballot-instructions">
-            {runoff &&
-              'Estos dibujos empataron. Vota otra vez para elegir un ganador. '}
-            {data.voting_system === 'plurality' &&
-              'Toca un dibujo para votar. Usa el icono para verlo en grande.'}
-            {data.voting_system === 'approval' &&
-              'Toca todos los dibujos que te gusten. Usa el icono para verlos en grande.'}
-            {data.voting_system === 'ranked' &&
-              'Toca los dibujos en orden, del más al menos favorito. Usa el icono para verlos en grande.'}
-          </p>
-          <ul className="entry-grid">
-            {ballot.map((entry) => {
-              const rank = ranks.indexOf(entry.id);
-              return (
-                <li key={entry.id}>
-                  <div
-                    className={`entry-card vote-card${isSelected(entry.id) ? ' selected' : ''}`}
-                  >
-                    {rank >= 0 && <span className="rank-badge">{rank + 1}</span>}
-                    {data.voting_system !== 'ranked' && (
-                      <span
-                        className={`select-mark${isSelected(entry.id) ? ' on' : ''}`}
-                        aria-hidden="true"
-                      >
-                        {isSelected(entry.id) ? '✓' : '+'}
-                      </span>
-                    )}
-                    <LightboxImage
-                      src={publicImageUrl(entry.image_path)}
-                      alt={showNames ? entry.name : 'Dibujo'}
-                      expand="icon"
-                    />
-                    <button
-                      type="button"
-                      className="entry-select"
-                      onClick={() => {
-                        if (data.voting_system === 'plurality') setSelected(entry.id);
-                        if (data.voting_system === 'approval') toggleApproval(entry.id);
-                        if (data.voting_system === 'ranked') toggleRank(entry.id);
-                      }}
-                      aria-pressed={isSelected(entry.id)}
-                      aria-label={
-                        showNames ? `Elegir ${entry.name}` : 'Elegir dibujo'
-                      }
-                    />
-                    {showNames && (
-                      <span className="entry-caption">{entry.name}</span>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="setup-actions sticky-cta">
-            <button
-              type="button"
-              className="primary"
-              disabled={!canSubmit}
-              onClick={() => void handleSubmit()}
-            >
-              {busy ? 'Enviando…' : 'Enviar voto'}
-            </button>
-          </div>
-        </>
+        <VoteBallot
+          key={`${data.id}:${data.round}`}
+          contest={data}
+          contestSlug={contestSlug}
+          showNames={showNames}
+          busy={busy}
+          setBusy={setBusy}
+          setFormError={setFormError}
+          reload={reload}
+        />
       )}
 
       {formError && <div className="error">{formError}</div>}
@@ -258,5 +146,143 @@ export function VotePage() {
         </p>
       )}
     </div>
+  );
+}
+
+function VoteBallot({
+  contest,
+  contestSlug,
+  showNames,
+  busy,
+  setBusy,
+  setFormError,
+  reload,
+}: {
+  contest: ContestView;
+  contestSlug: string;
+  showNames: boolean;
+  busy: boolean;
+  setBusy: (value: boolean) => void;
+  setFormError: (value: string | null) => void;
+  reload: () => Promise<void>;
+}) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [approved, setApproved] = useState<string[]>([]);
+  const [ranks, setRanks] = useState<string[]>([]);
+  const ballot = activeEntries(contest);
+  const runoff = isRunoffRound(contest);
+
+  function toggleApproval(id: string) {
+    setApproved((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    );
+  }
+
+  function toggleRank(id: string) {
+    setRanks((current) => {
+      const existing = current.indexOf(id);
+      if (existing >= 0) return current.slice(0, existing);
+      return [...current, id];
+    });
+  }
+
+  function isSelected(id: string): boolean {
+    if (contest.voting_system === 'plurality') return selected === id;
+    if (contest.voting_system === 'approval') return approved.includes(id);
+    return ranks.includes(id);
+  }
+
+  async function handleSubmit() {
+    setBusy(true);
+    setFormError(null);
+    try {
+      const token = getOrCreateClientToken(contestSlug);
+      const votes =
+        contest.voting_system === 'plurality' && selected
+          ? [{ entry_id: selected, rank: 1 }]
+          : contest.voting_system === 'approval'
+            ? approved.map((id) => ({ entry_id: id, rank: 1 }))
+            : ranks.map((id, index) => ({ entry_id: id, rank: index + 1 }));
+      await submitVotes(contestSlug, token, votes);
+      await reload();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'No se pudo enviar tu voto.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const canSubmit =
+    !busy &&
+    ((contest.voting_system === 'plurality' && selected) ||
+      (contest.voting_system === 'approval' && approved.length > 0) ||
+      (contest.voting_system === 'ranked' && ranks.length === ballot.length));
+
+  return (
+    <>
+      <p className="ballot-instructions">
+        {runoff &&
+          'Estos dibujos empataron. Vota otra vez para elegir un ganador. '}
+        {contest.voting_system === 'plurality' &&
+          'Toca un dibujo para votar. Usa el icono para verlo en grande.'}
+        {contest.voting_system === 'approval' &&
+          'Toca todos los dibujos que te gusten. Usa el icono para verlos en grande.'}
+        {contest.voting_system === 'ranked' &&
+          'Toca los dibujos en orden, del más al menos favorito. Usa el icono para verlos en grande.'}
+      </p>
+      <ul className="entry-grid">
+        {ballot.map((entry) => {
+          const rank = ranks.indexOf(entry.id);
+          return (
+            <li key={entry.id}>
+              <div
+                className={`entry-card vote-card${isSelected(entry.id) ? ' selected' : ''}`}
+              >
+                {rank >= 0 && <span className="rank-badge">{rank + 1}</span>}
+                {contest.voting_system !== 'ranked' && (
+                  <span
+                    className={`select-mark${isSelected(entry.id) ? ' on' : ''}`}
+                    aria-hidden="true"
+                  >
+                    {isSelected(entry.id) ? '✓' : '+'}
+                  </span>
+                )}
+                <LightboxImage
+                  src={publicImageUrl(entry.image_path)}
+                  alt={showNames ? entry.name : 'Dibujo'}
+                  expand="icon"
+                />
+                <button
+                  type="button"
+                  className="entry-select"
+                  onClick={() => {
+                    if (contest.voting_system === 'plurality') setSelected(entry.id);
+                    if (contest.voting_system === 'approval') toggleApproval(entry.id);
+                    if (contest.voting_system === 'ranked') toggleRank(entry.id);
+                  }}
+                  aria-pressed={isSelected(entry.id)}
+                  aria-label={
+                    showNames ? `Elegir ${entry.name}` : 'Elegir dibujo'
+                  }
+                />
+                {showNames && (
+                  <span className="entry-caption">{entry.name}</span>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="setup-actions sticky-cta">
+        <button
+          type="button"
+          className="primary"
+          disabled={!canSubmit}
+          onClick={() => void handleSubmit()}
+        >
+          {busy ? 'Enviando…' : 'Enviar voto'}
+        </button>
+      </div>
+    </>
   );
 }

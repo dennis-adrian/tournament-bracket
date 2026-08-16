@@ -37,8 +37,15 @@ export function listHostedContests(): HostIndexItem[] {
   try {
     const raw = localStorage.getItem(HOST_INDEX_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as HostIndexItem[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is HostIndexItem =>
+        !!item &&
+        typeof item === 'object' &&
+        typeof (item as HostIndexItem).slug === 'string' &&
+        typeof (item as HostIndexItem).name === 'string',
+    );
   } catch {
     return [];
   }
