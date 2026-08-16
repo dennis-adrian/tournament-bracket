@@ -21,6 +21,7 @@ const RPC_ERRORS_ES: Record<string, string> = {
   'Invalid image path': 'Ruta de imagen no válida',
   'Each drawing needs a sort order': 'Cada dibujo necesita un orden',
   'Voting has already started': 'La votación ya empezó',
+  'Upload permission denied': 'No se pudo autorizar la subida de imágenes',
   'Add at least 2 drawings before starting':
     'Añade al menos 2 dibujos antes de empezar',
   'Voting has not started': 'La votación aún no empieza',
@@ -77,6 +78,19 @@ export async function addContestEntries(
     p_slug: slug,
     p_host_token: hostToken,
     p_entries: entries,
+  });
+  if (error) throw rpcError(error.message);
+}
+
+export async function grantEntryUploads(
+  slug: string,
+  hostToken: string,
+  entryIds: string[],
+): Promise<void> {
+  const { error } = await getSupabase().rpc('grant_entry_uploads', {
+    p_slug: slug,
+    p_host_token: hostToken,
+    p_entry_ids: entryIds,
   });
   if (error) throw rpcError(error.message);
 }

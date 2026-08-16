@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   addContestEntries,
   createContest,
+  grantEntryUploads,
   uploadEntryImage,
 } from '../contest/api';
 import { fileToJpegBlob, nameFromFile } from '../contest/images';
@@ -78,6 +79,9 @@ export function CreateContestPage() {
   const [entries, setEntries] = useState<DraftEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Once the contest row exists, its name, system and duration are fixed on the
+  // server: a retry reuses that row, so stop offering edits that go nowhere.
+  const [settingsLocked, setSettingsLocked] = useState(false);
 
   const canCreate = name.trim().length > 0 && entries.length >= 2 && !busy;
 
@@ -129,6 +133,7 @@ export function CreateContestPage() {
           entriesAdded: false,
         };
         pendingCreateRef.current = pending;
+        setSettingsLocked(true);
       }
 
       if (pending.entriesAdded) {
@@ -138,11 +143,18 @@ export function CreateContestPage() {
 
       const contest = pending.contest;
       const pendingUploads = entries.filter((entry) => !pending.uploaded.has(entry.id));
-      await runWithConcurrency(pendingUploads, UPLOAD_CONCURRENCY, async (entry) => {
-        const blob = await fileToJpegBlob(entry.file);
-        const imagePath = await uploadEntryImage(contest.id, entry.id, blob);
-        pending.uploaded.set(entry.id, imagePath);
-      });
+      if (pendingUploads.length > 0) {
+        await grantEntryUploads(
+          contest.slug,
+          contest.host_token,
+          pendingUploads.map((entry) => entry.id),
+        );
+        await runWithConcurrency(pendingUploads, UPLOAD_CONCURRENCY, async (entry) => {
+          const blob = await fileToJpegBlob(entry.file);
+          const imagePath = await uploadEntryImage(contest.id, entry.id, blob);
+          pending.uploaded.set(entry.id, imagePath);
+        });
+      }
 
       const uploaded = entries.map((entry, index) => {
         const imagePath = pending.uploaded.get(entry.id);
@@ -187,6 +199,7 @@ export function CreateContestPage() {
         type="text"
         value={name}
         maxLength={80}
+        disabled={settingsLocked}
         onChange={(e) => setName(e.target.value)}
       />
 
@@ -202,6 +215,7 @@ export function CreateContestPage() {
               name="voting-system"
               value={item.id}
               checked={system === item.id}
+              disabled={settingsLocked}
               onChange={() => setSystem(item.id)}
             />
             <strong>{item.label}</strong>
@@ -221,6 +235,7 @@ export function CreateContestPage() {
             key={minutes}
             type="button"
             className={duration === minutes ? 'primary' : undefined}
+            disabled={settingsLocked}
             onClick={() => setDuration(minutes)}
           >
             {minutes} min
@@ -232,6 +247,7 @@ export function CreateContestPage() {
             min={DURATION_MIN}
             max={DURATION_MAX}
             value={duration}
+            disabled={settingsLocked}
             onChange={(e) => setDuration(clampDuration(Number(e.target.value)))}
           />
           minutos
@@ -288,6 +304,13 @@ export function CreateContestPage() {
           </li>
         ))}
       </ul>
+
+      {settingsLocked && (
+        <p className="field-hint">
+          El concurso ya se creó con estos ajustes. Solo puedes cambiar los
+          dibujos antes de reintentar.
+        </p>
+      )}
 
       {error && <div className="error">{error}</div>}
 

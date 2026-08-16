@@ -9,10 +9,8 @@ export function useContest(slug: string | undefined) {
   const [loading, setLoading] = useState(() => Boolean(slug));
   const [trackedSlug, setTrackedSlug] = useState(slug);
   const requestIdRef = useRef(0);
-  const slugRef = useRef(slug);
   const mountedRef = useRef(true);
 
-  slugRef.current = slug;
   if (slug !== trackedSlug) {
     setTrackedSlug(slug);
     setLoading(Boolean(slug));
@@ -23,24 +21,15 @@ export function useContest(slug: string | undefined) {
   const reload = useCallback(async () => {
     if (!slug) return;
     const requestId = ++requestIdRef.current;
-    const requestedSlug = slug;
     try {
       const next = await fetchContest(slug, getHostToken(slug), peekClientToken(slug));
-      if (
-        requestId !== requestIdRef.current ||
-        slugRef.current !== requestedSlug ||
-        !mountedRef.current
-      ) {
+      if (requestId !== requestIdRef.current || !mountedRef.current) {
         return;
       }
       setData(next);
       setError(null);
     } catch (err) {
-      if (
-        requestId !== requestIdRef.current ||
-        slugRef.current !== requestedSlug ||
-        !mountedRef.current
-      ) {
+      if (requestId !== requestIdRef.current || !mountedRef.current) {
         return;
       }
       throw err;

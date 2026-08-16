@@ -13,14 +13,20 @@ export function getHostToken(slug: string): string | null {
 }
 
 export function saveHostToken(slug: string, token: string, name: string): void {
+  let stored = false;
   try {
     localStorage.setItem(HOST_PREFIX + slug, token);
+    stored = true;
   } catch {
     // Quota or private mode: caller still has the token to show as a fallback.
   }
   try {
+    // Only list contests whose token survived: an entry without its token
+    // would link the host to a contest they can no longer control.
     const index = listHostedContests().filter((item) => item.slug !== slug);
-    index.unshift({ slug, name, createdAt: new Date().toISOString() });
+    if (stored) {
+      index.unshift({ slug, name, createdAt: new Date().toISOString() });
+    }
     localStorage.setItem(HOST_INDEX_KEY, JSON.stringify(index.slice(0, 12)));
   } catch {
     // Same: keep going so the host link and token can still be displayed.

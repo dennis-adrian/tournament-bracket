@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { MatchSlot, Participant, Tournament } from '../types';
 import {
   castVote,
@@ -43,7 +43,9 @@ export function BracketPage() {
   });
 
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useLayoutEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     const timer = setTimeout(() => persistBracketState(state), 250);
