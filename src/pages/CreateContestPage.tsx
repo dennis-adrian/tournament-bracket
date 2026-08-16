@@ -84,6 +84,10 @@ export function CreateContestPage() {
   const [settingsLocked, setSettingsLocked] = useState(false);
 
   const canCreate = name.trim().length > 0 && entries.length >= 2 && !busy;
+  // handleCreate reads `entries` from its closure, so edits made while a
+  // request is in flight would be silently dropped from the saved contest.
+  const entriesLocked = busy;
+  const settingsDisabled = settingsLocked || busy;
 
   async function handleFiles(fileList: FileList | null) {
     const files = Array.from(fileList ?? []).filter((file) =>
@@ -199,7 +203,7 @@ export function CreateContestPage() {
         type="text"
         value={name}
         maxLength={80}
-        disabled={settingsLocked}
+        disabled={settingsDisabled}
         onChange={(e) => setName(e.target.value)}
       />
 
@@ -215,7 +219,7 @@ export function CreateContestPage() {
               name="voting-system"
               value={item.id}
               checked={system === item.id}
-              disabled={settingsLocked}
+              disabled={settingsDisabled}
               onChange={() => setSystem(item.id)}
             />
             <strong>{item.label}</strong>
@@ -235,7 +239,7 @@ export function CreateContestPage() {
             key={minutes}
             type="button"
             className={duration === minutes ? 'primary' : undefined}
-            disabled={settingsLocked}
+            disabled={settingsDisabled}
             onClick={() => setDuration(minutes)}
           >
             {minutes} min
@@ -247,7 +251,7 @@ export function CreateContestPage() {
             min={DURATION_MIN}
             max={DURATION_MAX}
             value={duration}
-            disabled={settingsLocked}
+            disabled={settingsDisabled}
             onChange={(e) => setDuration(clampDuration(Number(e.target.value)))}
           />
           minutos
@@ -264,7 +268,7 @@ export function CreateContestPage() {
             accept="image/jpeg,image/png,image/webp,image/gif"
             multiple
             onChange={(e) => void handleFiles(e.target.files)}
-            disabled={entries.length >= MAX_ENTRIES}
+            disabled={entriesLocked || entries.length >= MAX_ENTRIES}
           />
         </label>
         <p className="field-hint">
@@ -292,11 +296,13 @@ export function CreateContestPage() {
                   ),
                 )
               }
+              disabled={entriesLocked}
               ariaLabel={`Nombre del dibujo ${idx + 1}`}
             />
             <button
               type="button"
               className="link danger"
+              disabled={entriesLocked}
               onClick={() => removeEntry(entry.id)}
             >
               Quitar
